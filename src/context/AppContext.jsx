@@ -6,7 +6,7 @@ import React, {
   useReducer,
 } from "react";
 
-import { SEED_ISSUES } from "../data/seedData";
+const SEED_ISSUES = [];
 
 const AppCtx = createContext();
 
