@@ -80,7 +80,7 @@ export default function HomePage() {
               marginBottom: 32,
             }}
           >
-            CivicSense helps citizens report potholes,
+            Urban Eye helps citizens report potholes,
             garbage, street light failures, water issues
             and more — while earning rewards for helping
             the community.

@@ -49,7 +49,7 @@ export default function Footer() {
                 marginBottom: 14,
               }}
             >
-              CivicSense
+              Urban Eye
             </div>
 
             <p
@@ -98,8 +98,8 @@ export default function Footer() {
           <div>
             <Title text="Contact" />
 
-            <FooterLink text="support@civicsense.com" />
-            <FooterLink text="+91 98765 43210" />
+            <FooterLink text="support@urbaneye.com" />
+            <FooterLink text="+91 9136192747" />
             <FooterLink text="Mumbai, India" />
           </div>
         </div>
@@ -123,7 +123,7 @@ export default function Footer() {
               fontSize: 13,
             }}
           >
-            © 2026 CivicSense. All rights reserved.
+            © 2026 Urban Eye. All rights reserved.
           </span>
 
           <div

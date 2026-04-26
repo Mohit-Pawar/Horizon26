@@ -4,17 +4,41 @@ import React, {
   createContext,
   useContext,
   useReducer,
+  useEffect,
 } from "react";
 
+const AppCtx =
+  createContext();
+
+/* ---------------- STORAGE ---------------- */
+const STORAGE_KEY =
+  "issues";
+
+/* ---------------- SEED ---------------- */
 const SEED_ISSUES = [];
 
-const AppCtx = createContext();
+/* ---------------- LOAD ISSUES ---------------- */
+function loadIssues() {
+  try {
+    const saved =
+      localStorage.getItem(
+        STORAGE_KEY
+      );
 
+    return saved
+      ? JSON.parse(saved)
+      : SEED_ISSUES;
+  } catch {
+    return SEED_ISSUES;
+  }
+}
+
+/* ---------------- INITIAL STATE ---------------- */
 const initialState = {
-  issues: SEED_ISSUES,
+  issues: loadIssues(),
+
   page: "home",
 
-  /* IMPORTANT */
   isLoggedIn:
     localStorage.getItem(
       "currentUser"
@@ -22,29 +46,39 @@ const initialState = {
       ? true
       : false,
 
-  currentUser: JSON.parse(
-    localStorage.getItem(
-      "currentUser"
-    ) || "null"
-  ),
+  currentUser:
+    JSON.parse(
+      localStorage.getItem(
+        "currentUser"
+      ) || "null"
+    ),
 
   userPoints: 420,
 };
 
-function reducer(state, action) {
-  switch (action.type) {
+/* ---------------- REDUCER ---------------- */
+function reducer(
+  state,
+  action
+) {
+  switch (
+    action.type
+  ) {
+    /* PAGE */
     case "SET_PAGE":
       return {
         ...state,
-        page: action.page,
+        page:
+          action.page,
       };
 
-    /* LOGIN FIX */
+    /* LOGIN */
     case "LOGIN_SUCCESS":
       return {
         ...state,
         isLoggedIn: true,
-        currentUser: action.user,
+        currentUser:
+          action.user,
         page: "feed",
       };
 
@@ -57,10 +91,12 @@ function reducer(state, action) {
       return {
         ...state,
         isLoggedIn: false,
-        currentUser: null,
+        currentUser:
+          null,
         page: "home",
       };
 
+    /* POINTS */
     case "SET_USER_POINTS":
       return {
         ...state,
@@ -68,104 +104,140 @@ function reducer(state, action) {
           state.userPoints +
           action.delta,
       };
-      case "UPVOTE_ISSUE": {
-  const currentUser =
-    state.currentUser ||
-    JSON.parse(
-      localStorage.getItem("currentUser") || "null"
-    );
 
-  if (!currentUser) return state;
+    /* UPVOTE */
+    case "UPVOTE_ISSUE": {
+      const user =
+        state.currentUser ||
+        JSON.parse(
+          localStorage.getItem(
+            "currentUser"
+          ) ||
+            "null"
+        );
 
-  return {
-    ...state,
-    issues: state.issues.map((issue) => {
-      if (issue.id !== action.id)
-        return issue;
-
-      const votedUsers =
-        issue.votedUsers || [];
-
-      /* already voted */
-      if (
-        votedUsers.includes(
-          currentUser.email
-        )
-      ) {
-        return issue;
-      }
+      if (!user)
+        return state;
 
       return {
-        ...issue,
-        votes: issue.votes + 1,
-        votedUsers: [
-          ...votedUsers,
-          currentUser.email,
-        ],
-      };
-    }),
-  };
-}
-case "ADD_ISSUE": {
-  const newIssue = {
-    id: Date.now(),
-    ...action.payload,
-  };
+        ...state,
+        issues:
+          state.issues.map(
+            (
+              issue
+            ) => {
+              if (
+                String(
+                  issue.id
+                ) !==
+                String(
+                  action.id
+                )
+              )
+                return issue;
 
-  const updatedIssues = [
-    newIssue,
-    ...state.issues,
-  ];
+              const voted =
+                issue.votedUsers ||
+                [];
 
-  /* save reports */
-  localStorage.setItem(
-    "issues",
-    JSON.stringify(updatedIssues)
-  );
+              if (
+                voted.includes(
+                  user.email
+                )
+              ) {
+                return issue;
+              }
 
-  return {
-    ...state,
-    issues: updatedIssues,
-    page: "feed",
-  };
-}
-const savedIssues = JSON.parse(
-  localStorage.getItem("issues") || "null"
-);
-
-const initialState = {
-  issues: savedIssues || SEED_ISSUES,
-  page: "home",
-  isLoggedIn: false,
-  currentUser: null,
-  userPoints: 420,
-};
-case "UPDATE_STATUS":
-  return {
-    ...state,
-    issues: state.issues.map(
-      (item) =>
-        item.id === action.id
-          ? {
-              ...item,
-              status: action.status,
+              return {
+                ...issue,
+                votes:
+                  (issue.votes ||
+                    0) +
+                  1,
+                votedUsers:
+                  [
+                    ...voted,
+                    user.email,
+                  ],
+              };
             }
-          : item
-    ),
-  };
+          ),
+      };
+    }
+
+    /* ADD REPORT */
+    case "ADD_ISSUE": {
+      const newIssue = {
+        id:
+          Date.now().toString(),
+
+        votes: 0,
+        status: "new",
+        votedUsers: [],
+
+        ...action.payload,
+      };
+
+      return {
+        ...state,
+        issues: [
+          newIssue,
+          ...state.issues,
+        ],
+        page: "feed",
+      };
+    }
+
+    /* DRAG STATUS */
+    case "UPDATE_STATUS":
+      return {
+        ...state,
+        issues:
+          state.issues.map(
+            (
+              issue
+            ) =>
+              String(
+                issue.id
+              ) ===
+              String(
+                action.id
+              )
+                ? {
+                    ...issue,
+                    status:
+                      action.status,
+                  }
+                : issue
+          ),
+      };
+
     default:
       return state;
   }
 }
 
+/* ---------------- PROVIDER ---------------- */
 export function AppProvider({
   children,
 }) {
-  const [state, dispatch] =
-    useReducer(
-      reducer,
-      initialState
+  const [
+    state,
+    dispatch,
+  ] = useReducer(
+    reducer,
+    initialState
+  );
+
+  /* AUTO SAVE REPORTS */
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        state.issues
+      )
     );
+  }, [state.issues]);
 
   return (
     <AppCtx.Provider
@@ -179,5 +251,9 @@ export function AppProvider({
   );
 }
 
-export const useApp = () =>
-  useContext(AppCtx);
+/* ---------------- HOOK ---------------- */
+export const useApp =
+  () =>
+    useContext(
+      AppCtx
+    );

@@ -127,7 +127,7 @@ export default function SignupPage() {
       {/* Left */}
       <div style={leftPanel}>
         <div style={badge}>
-          Join CivicSense
+          Join Urban Eye
         </div>
 
         <h1 style={heroTitle}>
